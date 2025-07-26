@@ -52,17 +52,19 @@ class LimitBelief:
         # Convert observation to [0, 1] scale
         normalized = observation / self.scale
         
-        # Bayesian update: if we observed a value close to the limit,
-        # increase alpha; otherwise increase beta
-        if normalized > 0.9:  # Close to limit
+        # Only update if we saw values close to the limit
+        # If we saw low values, it doesn't mean the limit is low - 
+        # it just means we didn't hit the limit
+        if normalized > 0.9:  # Very close to limit - strong evidence
             self.alpha += 2.0
             self.beta += 0.5
-        elif normalized > 0.8:
-            self.alpha += 1.5
-            self.beta += 1.0
-        else:
-            self.alpha += 0.5
-            self.beta += 2.0
+        elif normalized > 0.8:  # Close to limit - moderate evidence
+            self.alpha += 1.0
+            self.beta += 0.5
+        elif normalized > 0.7:  # Getting close - weak evidence
+            self.alpha += 0.3
+            self.beta += 0.3
+        # If < 0.7, don't update - not informative about actual limits
 
 
 @dataclass
@@ -81,8 +83,8 @@ class BayesianLimitEstimator:
     the true limits based on observed usage patterns.
     """
     
-    def __init__(self, plan_name: str = "max20x"):
-        self.plan_name = plan_name
+    def __init__(self, plan_name: str = "pro"):
+        self.plan = plan_name
         self.limits = self._initialize_priors(plan_name)
         self.confidence_threshold = 10  # Min observations for "high confidence"
         self.total_observations = 0
@@ -109,7 +111,10 @@ class BayesianLimitEstimator:
             }
         }
         
-        plan_priors = priors.get(plan_name, priors["max20x"])
+        # Use "pro" as default if plan not found
+        if plan_name not in priors:
+            logger.warning(f"Unknown plan '{plan_name}', defaulting to 'pro'")
+        plan_priors = priors.get(plan_name, priors["pro"])
         
         # Initialize with stronger priors based on documented limits
         return SessionLimits(

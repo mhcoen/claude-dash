@@ -1,0 +1,15 @@
+# Example PyPI configuration
+# Copy this to ~/.pypirc and add your tokens
+
+[distutils]
+index-servers =
+    pypi
+    testpypi
+
+[pypi]
+username = __token__
+password = pypi-AgEIcHlwaS5vcmc...  # Your PyPI token here
+
+[testpypi]
+username = __token__
+password = pypi-AgENdGVzdC5weXBpLm9yZw...  # Your TestPyPI token here

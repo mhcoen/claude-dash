@@ -1,9 +1,9 @@
 [tool.poetry]
 name = "claude-dash"
-version = "1.0.0"
+version = "1.0.1"
 description = "Know exactly when your Claude Code session will run out"
 authors = ["Michael Coen <mhcoen@gmail.com>"]
-license = "Apache-2.0"
+license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/mhcoen/claude-dash"
 repository = "https://github.com/mhcoen/claude-dash"
@@ -11,7 +11,7 @@ keywords = ["claude", "anthropic", "usage", "monitoring", "dashboard"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -28,6 +28,16 @@ packages = [{include = "claude_dash"}]
 python = "^3.9,<3.13"
 PyQt6 = "^6.4.0"
 numpy = "^1.26.0"
+scipy = "^1.11.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.11.0"
+pytest-qt = "^4.2.0"
+black = "^23.7.0"
+ruff = "^0.0.285"
+mypy = "^1.5.0"
 
 [tool.poetry.scripts]
 claude-dash = "claude_dash.main:main"
@@ -35,3 +45,37 @@ claude-dash = "claude_dash.main:main"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+target-version = "py39"
+line-length = 100
+select = ["E", "F", "I", "N", "W", "B", "C90", "D"]
+ignore = ["D100", "D101", "D102", "D103", "D104", "D105", "D106", "D107"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    ".venv",
+    "tests/fixtures"
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["claude_dash"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
