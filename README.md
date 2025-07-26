@@ -1,9 +1,9 @@
 # Claude Dash
 
 <p align="center">
-  <img src="claude-dash-screenshot.png" alt="Claude Dash Dark Theme" width="400">
+  <img src="https://raw.githubusercontent.com/mhcoen/claude-dash/main/claude-dash-screenshot.png" alt="Claude Dash Dark Theme" width="400">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="claude-dash-screenshot-light.png" alt="Claude Dash Light Theme" width="400">
+  <img src="https://raw.githubusercontent.com/mhcoen/claude-dash/main/claude-dash-screenshot-light.png" alt="Claude Dash Light Theme" width="400">
 </p>
 
 <p align="center">
