@@ -1,10 +1,17 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI assistants when working with code in this repository.
 
 ## Project Overview
 
-Claude Dash (cdash) is a PyQt6-based desktop application that monitors Claude Code usage in real-time by reading JSONL files from `~/.claude/projects/`. It provides session tracking, prompt predictions, and usage statistics.
+Claude Dash (cdash) is a PyQt6-based desktop application that monitors code assistant usage in real-time by reading JSONL files from `~/.claude/projects/`. It provides session tracking, prompt predictions, and usage statistics with a singular focus: answering how many more interactions remain in the current session.
+
+## Design Philosophy
+
+- **One Question, One Answer**: The app exists solely to show remaining interactions
+- **Zero Configuration**: Automatically detects subscription plans from usage patterns
+- **Minimal UI**: Ultra-compact 18px title bar, no unnecessary metrics
+- **Smart Predictions**: Bayesian ML that learns from user's historical patterns
 
 ## Common Development Commands
 
@@ -14,7 +21,7 @@ Claude Dash (cdash) is a PyQt6-based desktop application that monitors Claude Co
 pip install -e .
 
 # Run the application
-claude-dash
+python -m claude_dash
 
 # Build distribution packages
 python -m build
