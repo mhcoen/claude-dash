@@ -6,6 +6,7 @@ import json
 import os
 import logging
 import signal
+import argparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
@@ -21,20 +22,41 @@ from .providers.claude_code_reader import ClaudeCodeReader
 from .core.config_loader import get_config
 from .ui.cards.claude_code_card import ClaudeCodeCard
 from .ui.theme_manager import ThemeManager
+from .__version__ import __version__
 
-# Set up logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('/tmp/claude-dash-debug.log', mode='w'),
-        logging.StreamHandler()
-    ]
-)
+# Parse command line arguments first
+parser = argparse.ArgumentParser(description="Claude Dash - Know exactly when your Claude Code session will run out")
+parser.add_argument('--version', action='version', version=f'claude-dash {__version__}')
+parser.add_argument('--debug', action='store_true', help='Enable debug logging')
+parser.add_argument('--log-file', type=str, help='Write logs to specified file')
+parser.add_argument('--quiet', action='store_true', help='Suppress console output')
+args = parser.parse_args()
+
+# Set up logging based on arguments
+log_handlers = []
+if args.log_file:
+    log_handlers.append(logging.FileHandler(args.log_file, mode='w'))
+elif args.debug:
+    log_handlers.append(logging.FileHandler('/tmp/claude-dash-debug.log', mode='w'))
+
+if not args.quiet:
+    log_handlers.append(logging.StreamHandler())
+
+if log_handlers:
+    logging.basicConfig(
+        level=logging.DEBUG if args.debug else logging.WARNING,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=log_handlers
+    )
+else:
+    # No handlers means no logging
+    logging.basicConfig(level=logging.CRITICAL + 1)
+
 logger = logging.getLogger(__name__)
 
-# Enable DEBUG for the provider to see what's being counted
-logging.getLogger('claude_dash.providers.claude_code_reader').setLevel(logging.DEBUG)
+# Enable DEBUG for the provider if debug mode is on
+if args.debug:
+    logging.getLogger('claude_dash.providers.claude_code_reader').setLevel(logging.DEBUG)
 
 
 class DataUpdateWorker(QThread):
@@ -42,9 +64,9 @@ class DataUpdateWorker(QThread):
     data_ready = pyqtSignal(dict)
     error_occurred = pyqtSignal(str)
     
-    def __init__(self, reader: ClaudeCodeReader):
+    def __init__(self):
         super().__init__()
-        self.reader = reader
+        self.reader = None  # Will be created in the worker thread
         self.running = True
         # Get update frequency from config
         config = get_config()
@@ -54,6 +76,9 @@ class DataUpdateWorker(QThread):
         
     def run(self):
         """Run the data fetching loop"""
+        # Create the reader in the worker thread to avoid race conditions
+        self.reader = ClaudeCodeReader()
+        
         while self.running:
             try:
                 data = self.fetch_claude_data()
@@ -274,8 +299,6 @@ class ClaudeDashWindow(QMainWindow):
     
     def __init__(self):
         super().__init__()
-        # Create shared reader instance
-        self.reader = ClaudeCodeReader()
         self.data_worker = None
         
         # Theme manager
@@ -288,9 +311,17 @@ class ClaudeDashWindow(QMainWindow):
         self.original_theme = None
         self.theme_overlay = None
         
-        # UI scale factor
+        # Load UI settings from config
         config = get_config()
-        self.scale_factor = config.config.get('ui_scale', 1.0)
+        ui_config = config.config.get('ui', {})
+        
+        # Load saved theme
+        saved_theme = ui_config.get('theme', None)
+        if saved_theme and saved_theme in self.theme_manager.themes:
+            self.theme_manager.current_theme = saved_theme
+        
+        # Load saved scale
+        self.scale_factor = ui_config.get('scale', 1.0)
         self.font_scale = self.scale_factor
         
         self.init_ui()
@@ -350,7 +381,9 @@ class ClaudeDashWindow(QMainWindow):
         
     def check_data_source_and_launch(self):
         """Check if Claude data directory exists and contains data"""
-        claude_dir = self.reader.get_claude_dir()
+        # Get Claude directory from config
+        config = get_config()
+        claude_dir = config.get_claude_data_path()
         
         # Check if directory exists and contains any .jsonl files
         if not claude_dir.exists() or not any(claude_dir.rglob("*.jsonl")):
@@ -376,7 +409,7 @@ class ClaudeDashWindow(QMainWindow):
         
     def init_data_worker(self):
         """Initialize the data update worker"""
-        self.data_worker = DataUpdateWorker(self.reader)
+        self.data_worker = DataUpdateWorker()
         self.data_worker.data_ready.connect(self.on_data_ready)
         self.data_worker.error_occurred.connect(self.on_error)
         self.data_worker.start()
@@ -389,6 +422,9 @@ class ClaudeDashWindow(QMainWindow):
     def on_error(self, error_msg: str):
         """Handle errors from the worker thread"""
         logger.error(f"Data worker error: {error_msg}")
+        # Show error in UI
+        if hasattr(self, 'claude_card'):
+            self.claude_card.show_error(f"Error updating data: {error_msg}")
         
     def setup_shortcuts(self):
         """Setup keyboard shortcuts"""
@@ -451,8 +487,12 @@ class ClaudeDashWindow(QMainWindow):
             self.theme_selector_active = False
             self.theme_selector_first_press = True
             self.hide_theme_overlay()
-            # Theme is already applied, keeping it as is
-            # TODO: Add theme persistence to config
+            # Save theme to config
+            config = get_config()
+            if 'ui' not in config.config:
+                config.config['ui'] = {}
+            config.config['ui']['theme'] = self.theme_manager.current_theme
+            config.save_config()
     
     def cancel_theme_selection(self):
         """Cancel theme selection and revert to original"""
@@ -506,6 +546,13 @@ class ClaudeDashWindow(QMainWindow):
         if 0.75 <= new_scale <= 2.0:
             self.scale_factor = new_scale
             self.font_scale = new_scale
+            
+            # Save scale to config
+            config = get_config()
+            if 'ui' not in config.config:
+                config.config['ui'] = {}
+            config.config['ui']['scale'] = new_scale
+            config.save_config()
             
             # Resize window - keep consistent with init_ui
             card_width = 260
@@ -630,12 +677,6 @@ class ThemeOverlay(QWidget):
 
 def main():
     """Main entry point"""
-    # Handle command line arguments
-    if len(sys.argv) > 1 and sys.argv[1] == '--version':
-        from . import __version__
-        print(f"Claude Dash {__version__}")
-        sys.exit(0)
-    
     # Create app first
     app = QApplication(sys.argv)
     app.setApplicationName("Claude Dash")

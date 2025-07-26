@@ -203,7 +203,12 @@ class ClaudeCodeReader:
                                 'raw': entry
                             })
                             
-                        except:
+                        except (json.JSONDecodeError, KeyError, ValueError) as e:
+                            # Expected errors: malformed JSON, missing keys, date parsing issues
+                            continue
+                        except Exception as e:
+                            # Unexpected errors should be logged
+                            logger.error(f"Unexpected error parsing entry in {file_path}: {e}")
                             continue
                 
                 files_read += 1
@@ -324,7 +329,8 @@ class ClaudeCodeReader:
                     "Problem Solving:",
                     "Pending Tasks:",
                     "Current Work:",
-                    "Optional Next Step:"
+                    "Optional Next Step:",
+                    "[Request interrupted"  # Skip interrupt messages
                 ]
                 
                 # Only count if it's actual user text

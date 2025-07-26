@@ -68,7 +68,18 @@ DEFAULT_CONFIG = {
             "max5_optimal": 200
         },
         "quick_start_hours": 24,
-        "cache_duration_seconds": 30
+        "cache_duration_seconds": 30,
+        "adaptive_bounds": {
+            "window_size": 20,
+            "simple_threshold": 3,
+            "complex_threshold": 9,
+            "pattern_defaults": {
+                "simple": 3.0,
+                "moderate": 7.0,
+                "complex": 18.0,
+                "mixed": 10.0
+            }
+        }
     },
     "paths": {
         "claude_data": "~/.claude/projects",

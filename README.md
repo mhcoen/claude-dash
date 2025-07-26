@@ -28,7 +28,9 @@ Claude Dash answers one critical question: **How many more interactions can I ha
 
 Unlike other usage trackers that bombard you with metrics, Claude Dash has a singular focus - showing you exactly how many prompts you have left before your session expires. Every design decision prioritizes this core mission.
 
-**Key Insight**: Claude Code enforces message limits, not token limits. You get some number of interactions per 5-hour session, and Claude Dash helps you track what really matters - how many more you have.
+**Key Insight**: Claude Code primarily enforces message limits, not token limits*. You get some number of interactions per 5-hour session, and Claude Dash helps you track what really matters - how many more you have.
+
+*Note: Very long messages, large files, or extensive session context can sometimes reduce the number of interactions below your plan's nominal quota.
 
 ### Design Philosophy
 
@@ -108,10 +110,23 @@ Simply launch Claude Dash - **no configuration needed**. The app automatically:
 
 1. **Detects your subscription plan** from your usage patterns
 2. **Shows your remaining prompts** with ML-powered predictions
-3. **Learns your coding style** to improve accuracy over time
+3. **Learns your coding style** to improve accuracy over time (tracks message frequency, session duration, and usage spikes from your past 7 days)
 4. **Updates every 30 seconds** with real-time data
 
 That's it. Just run it and get your answer.
+
+Claude Dash parses `~/.claude/projects/*/chats/*.jsonl` files in real-time with no upload or cloud processing - your data never leaves your machine.
+
+### Command Line Options
+
+```bash
+claude-dash [options]
+```
+
+- `--version` - Show version information
+- `--debug` - Enable debug logging (saves to `/tmp/claude-dash-debug.log`)
+- `--log-file FILE` - Write logs to specified file
+- `--quiet` - Suppress all console output
 
 ### Understanding the Display
 
@@ -142,6 +157,27 @@ Claude Dash works out of the box with **zero configuration required**. It automa
 Advanced users can find configuration files in `~/.claude-dash/` if they want to customize themes or UI settings, but this is completely optional.
 
 To reset configuration to defaults, simply delete `~/.claude-dash/` and restart the app.
+
+### Advanced Configuration
+
+For power users who want to fine-tune prediction accuracy, the following values can be adjusted in `~/.claude-dash/config.json`:
+
+```json
+"analysis": {
+    "adaptive_bounds": {
+        "simple_threshold": 3,      // Messages below this = simple pattern
+        "complex_threshold": 9,     // Messages above this = complex pattern
+        "pattern_defaults": {
+            "simple": 3.0,          // Expected multiplier for simple tasks
+            "moderate": 7.0,        // Expected multiplier for moderate tasks
+            "complex": 18.0,        // Expected multiplier for complex tasks
+            "mixed": 10.0           // Expected multiplier for mixed patterns
+        }
+    }
+}
+```
+
+These thresholds affect how the app categorizes your coding patterns and predicts future usage. Adjust them if you find predictions consistently over or under-estimating your remaining prompts.
 
 ## How Predictions Work
 
@@ -206,6 +242,19 @@ Claude Dash reads usage data from Claude Code's local JSONL files in `~/.claude/
 2. **Pattern Analysis**: Tracks message multiplication (simple: 2-3x, complex: 10-20x)
 3. **Adaptive Bounds**: Calculates confidence ranges based on recent usage
 4. **Real-Time Updates**: Refreshes every 30 seconds with current session data
+
+### Technical Details: Bayesian Prediction System
+
+The app uses a Beta-Binomial Bayesian model to predict session limits:
+
+- **Prior Beliefs**: Starts with plan-specific priors (e.g., Pro: 12-18 prompts)
+- **Evidence Collection**: Each session that hits limits provides evidence about your actual limits
+- **Posterior Updates**: The Beta distribution parameters (α, β) update based on how close you get to limits
+- **Personalization**: After 5-10 sessions, predictions converge to YOUR specific usage patterns
+
+The key insight: Not all users hit the same limits. Some consistently hit token limits, others message limits. The Bayesian approach discovers which limit affects YOU most, not what the documentation claims.
+
+For implementation details, see [`claude_dash/core/bayesian_limits.py`](claude_dash/core/bayesian_limits.py).
 
 ## Development
 

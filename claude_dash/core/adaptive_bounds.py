@@ -6,6 +6,7 @@ from collections import deque
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 import logging
+from .config_loader import get_config
 
 logger = logging.getLogger(__name__)
 
@@ -26,21 +27,27 @@ class PromptBounds:
 class AdaptiveBoundsCalculator:
     """Calculate adaptive confidence bounds based on recent prompt patterns"""
     
-    def __init__(self, window_size: int = 20):
-        self.window_size = window_size
-        self.recent_multipliers = deque(maxlen=window_size)
-        self.pattern_history = deque(maxlen=window_size)
+    def __init__(self, window_size: Optional[int] = None):
+        # Load configuration
+        config = get_config()
+        adaptive_config = config.config.get('analysis', {}).get('adaptive_bounds', {})
         
-        # Pattern thresholds
-        self.SIMPLE_THRESHOLD = 3
-        self.COMPLEX_THRESHOLD = 9
+        # Use config values with hardcoded fallbacks
+        self.window_size = window_size or adaptive_config.get('window_size', 20)
+        self.recent_multipliers = deque(maxlen=self.window_size)
+        self.pattern_history = deque(maxlen=self.window_size)
         
-        # Default multipliers by pattern (conservative estimates)
+        # Pattern thresholds from config with fallbacks
+        self.SIMPLE_THRESHOLD = adaptive_config.get('simple_threshold', 3)
+        self.COMPLEX_THRESHOLD = adaptive_config.get('complex_threshold', 9)
+        
+        # Default multipliers by pattern from config with fallbacks
+        config_defaults = adaptive_config.get('pattern_defaults', {})
         self.pattern_defaults = {
-            'simple': 3.0,    # Was 2.0
-            'moderate': 7.0,  # Was 5.5
-            'complex': 18.0,  # Was 15.0
-            'mixed': 10.0     # Was 7.0
+            'simple': config_defaults.get('simple', 3.0),
+            'moderate': config_defaults.get('moderate', 7.0),
+            'complex': config_defaults.get('complex', 18.0),
+            'mixed': config_defaults.get('mixed', 10.0)
         }
     
     def add_prompt(self, message_count: int) -> None:

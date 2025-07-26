@@ -626,3 +626,23 @@ class ClaudeCodeCard(BaseProviderCard):
             
         # Update the custom progress bar
         self.model_progress_bar.set_percentages(opus_percentage, sonnet_percentage)
+    
+    def show_error(self, error_msg: str):
+        """Display an error message on the card"""
+        # Store the error state
+        self.error_message = error_msg
+        
+        # Update the UI to show error
+        if hasattr(self, 'prediction_label'):
+            self.prediction_label.setText(f"Error: {error_msg}")
+            self.prediction_label.setStyleSheet("color: red; font-weight: bold;")
+        
+        # Clear the error after 10 seconds
+        QTimer.singleShot(10000, self._clear_error)
+    
+    def _clear_error(self):
+        """Clear the error message and restore normal display"""
+        if hasattr(self, 'error_message'):
+            del self.error_message
+        if hasattr(self, 'prediction_label'):
+            self.prediction_label.setStyleSheet("")  # Reset style
