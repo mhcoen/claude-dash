@@ -75,6 +75,15 @@ Since there are no tests currently, focus on manual testing by running the appli
 - PyQt6 requires special handling for thread safety - always use signals for UI updates
 - NumPy is used but not listed in dependencies - consider adding it
 
+### Known Claude Code Bugs We Handle
+
+#### Batch-Write Bug (Affects macOS particularly)
+When Claude Code sessions are resumed after running out of context, the conversation history from the resumed session is written to JSONL files with identical timestamps. This creates artificially inflated prompt counts as all prompts from the previous conversation appear to have been sent at the exact same moment.
+
+**How we handle it**: The app detects groups of prompts with identical or near-identical timestamps (within 2 seconds) at the beginning of sessions and filters them out. Batch writes that occur within a session (not at the beginning) are allowed but generate a warning.
+
+**Impact**: Without this fix, prompt counts can be inflated by 10-20 prompts or more, making it appear users have far exceeded their actual usage.
+
 ## Screenshot Workflow for UI Development
 
 When working on UI layout issues, use the semi-automated screenshot workflow:

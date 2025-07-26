@@ -268,7 +268,109 @@ class ClaudeCodeReader:
                 else:
                     logger.debug(f"Block {block.id} inactive: ended at {block.end_time}, now is {now}")
         
+        # Detect and fix batch-written prompts at the beginning of sessions
+        self._fix_batch_write_bug(blocks)
+        
         return blocks
+    
+    def _fix_batch_write_bug(self, blocks: List[SessionBlock]) -> None:
+        """Detect and fix batch-written prompts at the beginning of sessions
+        
+        This handles a known Claude Code bug where resumed sessions write all
+        previous conversation history with identical timestamps, inflating prompt counts.
+        """
+        for block in blocks:
+            if not block.entries or block.user_prompt_count < 5:
+                continue
+                
+            # First, collect all actual user prompts (not tool results or system messages)
+            user_prompts = []
+            
+            for entry in block.entries:
+                if entry.get('type') == 'user':
+                    # Check if it's a real user prompt (not tool result)
+                    raw = entry.get('raw', {})
+                    message = raw.get('message', {})
+                    content = message.get('content')
+                    
+                    # Tool results have content[0].type == 'tool_result'
+                    is_tool_result = False
+                    text_content = ""
+                    
+                    if isinstance(content, list) and len(content) > 0:
+                        first_content = content[0]
+                        if isinstance(first_content, dict):
+                            if first_content.get('type') == 'tool_result':
+                                is_tool_result = True
+                            else:
+                                text_content = first_content.get('text', '')
+                    elif isinstance(content, str):
+                        text_content = content
+                    
+                    if not is_tool_result and text_content:
+                        # Filter out non-English text and system messages
+                        text_stripped = text_content.strip()
+                        
+                        # Skip empty or very short content
+                        if len(text_stripped) < 3:
+                            continue
+                            
+                        # Skip interrupt messages
+                        if text_stripped.startswith('[Request interrupted'):
+                            continue
+                        
+                        # Skip specific system messages (same as in standalone script)
+                        skip_patterns = [
+                            "Caveat: The messages below",
+                            "<command-name>",
+                            "<local-command-stdout>",
+                            "<user-memory-input>",
+                            "This session is being continued from a previous conversation"
+                        ]
+                        if any(pattern in text_stripped for pattern in skip_patterns):
+                            continue
+                        
+                        user_prompts.append(entry)
+            
+            if not user_prompts:
+                continue
+                
+            # Group prompts by timestamp (within 2 seconds)
+            timestamp_groups = {}
+            for prompt in user_prompts:
+                # Round to nearest 2 seconds to group nearly-identical timestamps
+                ts = prompt['timestamp']
+                ts_key = ts.replace(microsecond=0)
+                ts_key = ts_key.replace(second=(ts_key.second // 2) * 2)
+                
+                if ts_key not in timestamp_groups:
+                    timestamp_groups[ts_key] = []
+                timestamp_groups[ts_key].append(prompt)
+            
+            # Find the first actual activity timestamp
+            first_activity = user_prompts[0]['timestamp']
+            first_activity_buffer = first_activity + timedelta(minutes=5)  # 5 minute buffer from first activity
+            
+            # Check each timestamp group
+            batch_write_count = 0
+            for ts_key, prompts in sorted(timestamp_groups.items()):
+                if len(prompts) > 3 and ts_key <= first_activity_buffer:
+                    # This is likely a batch write at the beginning of the session
+                    batch_write_count += len(prompts)
+                    logger.debug(f"Detected {len(prompts)} batch-written prompts at {ts_key} in block {block.id}")
+            
+            # If we found batch writes, subtract them from the prompt count
+            if batch_write_count > 0:
+                old_count = block.user_prompt_count
+                # The actual prompt count is the total minus batch writes
+                actual_prompt_count = len(user_prompts) - batch_write_count
+                # Update the block's user_prompt_count to the actual count
+                block.user_prompt_count = actual_prompt_count
+                logger.info(f"Fixed batch-write bug in block {block.id}: {old_count} → {block.user_prompt_count} prompts (removed {batch_write_count} batch-written)")
+                
+                # Recalculate multiplication factor
+                if block.user_prompt_count > 0:
+                    block.multiplication_factor = block.assistant_message_count / block.user_prompt_count
     
     def _add_entry_to_block(self, block: SessionBlock, entry: Dict) -> None:
         """Add entry to block and aggregate data"""
@@ -291,18 +393,6 @@ class ClaudeCodeReader:
                     is_tool_result = True
             
             if not is_tool_result:
-                # For the current session block, filter out entries from previous days
-                # to avoid counting old prompts from sessions at the same hour
-                if block.is_active:
-                    # Get today's date at midnight UTC
-                    now = datetime.now(timezone.utc).replace(tzinfo=None)
-                    today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                    
-                    # Only count entries from today for active sessions
-                    if 'timestamp' in entry and entry['timestamp'] < today_midnight:
-                        # Skip entries from previous days
-                        return  # Exit this function early
-                
                 # Also filter out interrupt messages and empty content
                 text_content = ""
                 if isinstance(content, list) and len(content) > 0:
@@ -338,6 +428,18 @@ class ClaudeCodeReader:
                     text_content.strip() and  # Not just whitespace
                     not any(text_content.startswith(skip) for skip in skip_patterns) and
                     len(text_content) < 500):  # Reasonable length for a user message
+                    
+                    # For the current session block, filter out entries from previous days
+                    # to avoid counting old prompts from sessions at the same hour
+                    if block.is_active:
+                        # Get today's date at midnight UTC
+                        now = datetime.now(timezone.utc).replace(tzinfo=None)
+                        today_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                        
+                        # Only count entries from today for active sessions
+                        if 'timestamp' in entry and entry['timestamp'] < today_midnight:
+                            # Skip entries from previous days - don't count them
+                            return  # Exit this function early
                     
                     block.user_prompt_count += 1
                     # Track prompt timestamp for moving average

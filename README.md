@@ -287,6 +287,8 @@ The executable will be created in the `dist/` directory.
 - This is normal when switching between simple and complex tasks
 - The bounds will tighten as you develop consistent usage patterns
 
+**Note**: Correctly handles the batch-write bug in Claude Code that affects prompt counts (particularly on macOS)
+
 ## Contributing
 
 Contributions welcome! For major changes, please open an issue first.
