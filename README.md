@@ -117,7 +117,7 @@ That's it. Just run it and get your answer.
 
 The main card shows:
 - **Interactions: X used** - Number of prompts you've sent in this session
-- **Remaining: X** - Estimated prompts left based on your usage patterns
+- **Remaining: ~X** - Estimated prompts left based on your usage patterns (~ indicates approximation)
 - **Burn rate: X / hour** - Current rate of prompt consumption
 - **Session Time** - Progress bar showing time elapsed and remaining
 - **Model Usage** - Percentage of Opus vs Sonnet usage
@@ -170,7 +170,9 @@ The app predicts whether you'll hit limits based on:
 3. **Time remaining**: Hours left in your current 5-hour session window
 4. **Limiting factor**: Which resource (messages, prompts, or tokens) you'll exhaust first
 
-**Why we don't show exact numbers**: Trying to predict exactly how many prompts you'll get (e.g., "you have 73 prompts left") is meaningless and misleading. Your actual limit depends on task complexity - simple queries use fewer messages than complex debugging sessions. More importantly, there's inherent randomness in how Claude Code responds that cannot be predicted or modeled. Instead, we answer the question that actually matters: are you likely to run out of interactions before the session ends?
+**Why we show approximate numbers**: The "~" before remaining prompts indicates these are estimates, not guarantees. Your actual limit depends on task complexity - simple queries use fewer messages than complex debugging sessions. More importantly, there's inherent randomness in responses that cannot be predicted or modeled. 
+
+**What we don't predict**: We don't try to tell you exactly when your session will expire (e.g., "you'll run out at 3:47 PM"). Instead, we answer the question that actually matters: are you likely to run out of interactions before the session ends?
 
 **Prediction states:**
 - 🟢 **Very unlikely to hit any limits**: You'll run out of time before hitting limits

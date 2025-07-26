@@ -355,7 +355,7 @@ class ClaudeCodeCard(BaseProviderCard):
         if is_active:
             self.interactions_value.setText(f"{self.prompts_used} used")
             remaining = max(0, int(interactions_limit - self.prompts_used))
-            self.remaining_value.setText(str(remaining))
+            self.remaining_value.setText(f"~{remaining}")
             
             # Update burn rate
             if burn_rates["prompts"] > 0:
