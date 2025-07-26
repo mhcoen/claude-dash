@@ -317,8 +317,8 @@ class ClaudeDashWindow(QMainWindow):
         
         # Load saved theme
         saved_theme = ui_config.get('theme', None)
-        if saved_theme and saved_theme in self.theme_manager.themes:
-            self.theme_manager.current_theme = saved_theme
+        if saved_theme and saved_theme in self.theme_manager.THEMES:
+            self.theme_manager.set_theme(saved_theme)
         
         # Load saved scale
         self.scale_factor = ui_config.get('scale', 1.0)
