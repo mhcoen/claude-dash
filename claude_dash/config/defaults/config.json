@@ -1,0 +1,102 @@
+{
+  "claude_code": {
+    "subscription_plan": "max20",
+    "plans": {
+      "max5": {
+        "monthly_cost": 100,
+        "session_token_limit": 88000,
+        "sessions_per_month": 30
+      },
+      "max20": {
+        "monthly_cost": 200,
+        "session_token_limit": 220000,
+        "sessions_per_month": 120
+      }
+    },
+    "session_duration_hours": 5,
+    "session_gap_minutes": 5
+  },
+  "pricing": {
+    "models": {
+      "claude-3-opus-20240229": {
+        "input": 15.0,
+        "output": 75.0,
+        "cache_creation": 18.75,
+        "cache_read": 1.5
+      },
+      "claude-opus-4-20250514": {
+        "input": 15.0,
+        "output": 75.0,
+        "cache_creation": 18.75,
+        "cache_read": 1.5
+      },
+      "claude-3.5-sonnet": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_creation": 3.75,
+        "cache_read": 0.3
+      },
+      "claude-3-sonnet": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_creation": 3.75,
+        "cache_read": 0.3
+      },
+      "claude-sonnet-4-20250514": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_creation": 3.75,
+        "cache_read": 0.3
+      },
+      "claude-3-haiku": {
+        "input": 0.25,
+        "output": 1.25,
+        "cache_creation": 0.3125,
+        "cache_read": 0.025
+      },
+      "claude-3.5-haiku": {
+        "input": 0.8,
+        "output": 4.0,
+        "cache_creation": 1.0,
+        "cache_read": 0.08
+      },
+      "<synthetic>": {
+        "input": 0.0,
+        "output": 0.0,
+        "cache_creation": 0.0,
+        "cache_read": 0.0
+      },
+      "default": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_creation": 3.75,
+        "cache_read": 0.3
+      }
+    },
+    "currency": "USD",
+    "per_million_tokens": true
+  },
+  "ui": {
+    "theme": "dark",
+    "update_frequency_seconds": 30,
+    "font_sizes": {
+      "tiny": 10,
+      "small": 12,
+      "medium": 14,
+      "large": 16,
+      "huge": 20
+    }
+  },
+  "analysis": {
+    "cost_thresholds": {
+      "api_optimal": 100,
+      "max5_optimal": 200
+    },
+    "quick_start_hours": 24,
+    "cache_duration_seconds": 30
+  },
+  "paths": {
+    "claude_data": "~/.claude/projects",
+    "logs": "~/.claude-dash/logs"
+  }
+}
