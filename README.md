@@ -51,7 +51,7 @@ Unlike other usage trackers that bombard you with metrics, Claude Dash has a sin
 - **Focused Design**: We show only what affects your remaining interactions
 - **Personalized Learning**: The app learns YOUR patterns, not generic averages
 - **Actionable Insights**: Clear guidance on whether to continue or switch models
-- **Zero Configuration**: Just launch and go - automatically detects your subscription plan and reads Claude's local data
+- **Zero Configuration**: Just launch and go - automatically determines your subscription plan and reads Claude's local data
 
 ### Technical Details
 - **Compact Interface**: Minimal window footprint
@@ -108,7 +108,7 @@ python src/main.py
 
 Simply launch Claude Dash - **no configuration needed**. The app automatically:
 
-1. **Detects your subscription plan** from your usage patterns
+1. **Determines your subscription plan** from your usage patterns
 2. **Shows your remaining prompts** with ML-powered predictions
 3. **Learns your coding style** to improve accuracy over time (tracks message frequency, session duration, and usage spikes from your past 7 days)
 4. **Updates every 30 seconds** with real-time data
@@ -299,7 +299,7 @@ Email: [mhcoen@gmail.com](mailto:mhcoen@gmail.com), [mhcoen@alum.mit.edu](mailto
 ## Acknowledgments
 
 Special thanks to:
-[Maciek Dymarczyk](https://github.com/Maciek-roboblog) for his [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) and to [Ryotaro Kimura](https://github.com/ryoppippi) for [ccusage](https://github.com/ryoppippi/ccusage). These were instrumental in giving me the idea for this and in understanding how to read and parse Claude's log files.
+[Maciek Dymarczyk](https://github.com/Maciek-roboblog) for [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) and to [Ryotaro Kimura](https://github.com/ryoppippi) for [ccusage](https://github.com/ryoppippi/ccusage). These were instrumental in giving me the idea for this and in understanding how to read and parse Claude's log files.
 
 Development of this work was assisted by Claude Code, Gemini Code Assist, Warp, GPT-o3, and Zen-MCP.
 
